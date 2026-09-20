@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +58,28 @@ public class ProductServiceImpl implements ProductService {
 		}
 
 		return products.map(productMapper::toDTO);
+	}
+
+	// =====================================================
+	// TAT CA, SAP XEP GIA TANG DAN (trang Home)
+	// =====================================================
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProductDTO> findAllSortedByPriceAsc() {
+		return productRepository.findAll(Sort.by("price").ascending()).stream()
+				.map(productMapper::toDTO)
+				.collect(Collectors.toList());
+	}
+
+	// =====================================================
+	// TAT CA PRODUCT THUOC 1 CATEGORY (trang Home)
+	// =====================================================
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProductDTO> findByCategoryId(Long categoryId) {
+		return productRepository.findByCategoryId(categoryId, Sort.by("id").descending()).stream()
+				.map(productMapper::toDTO)
+				.collect(Collectors.toList());
 	}
 
 	// =====================================================

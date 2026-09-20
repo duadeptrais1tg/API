@@ -1,0 +1,76 @@
+type Category {
+    id: ID!
+    name: String!
+    icon: String
+}
+
+type Product {
+    id: ID!
+    name: String!
+    price: Float!
+    quantity: Int!
+    description: String
+    images: String
+    categoryId: ID
+    categoryName: String
+}
+
+# Anh xa truc tiep vao cac getter cua Spring Data Page (getContent, getTotalElements,...)
+type ProductPage {
+    content: [Product]!
+    totalElements: Int!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+    first: Boolean!
+    last: Boolean!
+}
+
+type CategoryPage {
+    content: [Category]!
+    totalElements: Int!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+    first: Boolean!
+    last: Boolean!
+}
+
+input ProductInput {
+    name: String!
+    price: Float!
+    quantity: Int!
+    description: String
+    categoryId: ID
+}
+
+input CategoryInput {
+    name: String!
+}
+
+type Query {
+    # CRUD + tim kiem + phan trang Product
+    products(keyword: String, page: Int = 0, size: Int = 10): ProductPage!
+    productById(id: ID!): Product
+
+    # Trang Home: tat ca product, gia tang dan
+    productsSortedByPriceAsc: [Product]!
+
+    # Trang Home: tat ca product cua 1 category
+    productsByCategory(categoryId: ID!): [Product]!
+
+    # CRUD + tim kiem + phan trang Category
+    categories(keyword: String, page: Int = 0, size: Int = 10): CategoryPage!
+    categoryById(id: ID!): Category
+    allCategories: [Category]!
+}
+
+type Mutation {
+    createProduct(input: ProductInput!): Product!
+    updateProduct(id: ID!, input: ProductInput!): Product!
+    deleteProduct(id: ID!): Boolean!
+
+    createCategory(input: CategoryInput!): Category!
+    updateCategory(id: ID!, input: CategoryInput!): Category!
+    deleteCategory(id: ID!): Boolean!
+}

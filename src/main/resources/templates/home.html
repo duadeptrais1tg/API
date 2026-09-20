@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>Trang chủ</title>
+</head>
+<body>
+<section layout:fragment="content">
+
+    <h2 class="mb-4">Cửa hàng (dữ liệu tải bằng AJAX qua GraphQL)</h2>
+
+    <!-- ================================================= -->
+    <!-- SAP XEP GIA TANG DAN -->
+    <!-- ================================================= -->
+    <h4>Tất cả sản phẩm - Giá thấp đến cao</h4>
+    <div class="row g-3 mb-5" id="priceAscList"></div>
+
+    <!-- ================================================= -->
+    <!-- LOC THEO DANH MUC -->
+    <!-- ================================================= -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h4 class="mb-0">Sản phẩm theo danh mục</h4>
+        <select class="form-select w-auto" id="categoryFilter">
+            <option value="">-- Chọn danh mục --</option>
+        </select>
+    </div>
+    <div class="row g-3 mb-5" id="categoryProductList">
+        <p class="text-muted">Chọn một danh mục ở trên để xem sản phẩm.</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        const GRAPHQL_URL = '/graphql';
+
+        function graphql(query, variables, onSuccess) {
+            $.ajax({
+                url: GRAPHQL_URL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ query: query, variables: variables || {} }),
+                success: function (res) {
+                    if (res.errors && res.errors.length) {
+                        alert(res.errors[0].message);
+                        return;
+                    }
+                    onSuccess(res.data);
+                },
+                error: function () {
+                    alert('Không thể kết nối GraphQL server');
+                }
+            });
+        }
+
+        function productCard(p) {
+            const image = p.images
+                ? '/uploads/products/' + p.images
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const category = p.categoryName
+                ? '<span class="badge bg-info text-dark">' + p.categoryName + '</span>'
+                : '<span class="badge bg-secondary">Chưa phân loại</span>';
+            return '<div class="col-md-3">' +
+                '<div class="card h-100">' +
+                '<img src="' + image + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
+                '<div class="card-body">' +
+                '<h6 class="card-title">' + p.name + '</h6>' +
+                '<p class="mb-1">' + category + '</p>' +
+                '<p class="fw-bold text-danger mb-0">' + Number(p.price).toLocaleString('vi-VN') + ' đ</p>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+        }
+
+        // ================================================
+        // 1) Tat ca product, gia tang dan
+        // ================================================
+        $(document).ready(function () {
+            graphql(
+                '{ productsSortedByPriceAsc { id name price images categoryName } }',
+                {},
+                function (data) {
+                    const html = data.productsSortedByPriceAsc.map(productCard).join('');
+                    $('#priceAscList').html(html || '<p class="text-muted">Chưa có sản phẩm.</p>');
+                }
+            );
+
+            // Nap danh sach category cho dropdown loc
+            graphql(
+                '{ allCategories { id name } }',
+                {},
+                function (data) {
+                    let options = '<option value="">-- Chọn danh mục --</option>';
+                    data.allCategories.forEach(function (c) {
+                        options += '<option value="' + c.id + '">' + c.name + '</option>';
+                    });
+                    $('#categoryFilter').html(options);
+                }
+            );
+        });
+
+        // ================================================
+        // 2) Loc san pham theo danh muc duoc chon
+        // ================================================
+        $('#categoryFilter').on('change', function () {
+            const categoryId = $(this).val();
+            if (!categoryId) {
+                $('#categoryProductList').html('<p class="text-muted">Chọn một danh mục ở trên để xem sản phẩm.</p>');
+                return;
+            }
+            graphql(
+                'query($categoryId: ID!) { productsByCategory(categoryId: $categoryId) { id name price images categoryName } }',
+                { categoryId: categoryId },
+                function (data) {
+                    const products = data.productsByCategory;
+                    const html = products.map(productCard).join('');
+                    $('#categoryProductList').html(html || '<p class="text-muted">Danh mục này chưa có sản phẩm.</p>');
+                }
+            );
+        });
+    </script>
+
+</section>
+</body>
+</html>

@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,6 +45,24 @@ public class CategoryServiceImpl implements CategoryService {
 		return categoryRepository.findAll().stream()
 				.map(categoryMapper::toDTO)
 				.collect(Collectors.toList());
+	}
+
+	// =====================================================
+	// SEARCH + PAGINATION
+	// =====================================================
+	@Override
+	@Transactional(readOnly = true)
+	public Page<CategoryDTO> search(String keyword, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+		Page<Category> categories;
+		if (keyword == null || keyword.isBlank()) {
+			categories = categoryRepository.findAll(pageable);
+		} else {
+			categories = categoryRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable);
+		}
+
+		return categories.map(categoryMapper::toDTO);
 	}
 
 	// =====================================================
